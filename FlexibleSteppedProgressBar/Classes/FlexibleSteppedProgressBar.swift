@@ -318,7 +318,7 @@ import CoreGraphics
         self.layer.addSublayer(self.backgroundLayer)
         self.layer.addSublayer(self.progressLayer)
         self.layer.addSublayer(self.clearSelectionLayer)
-        self.layer.addSublayer(self.selectionCenterLayer)
+       // self.layer.addSublayer(self.selectionCenterLayer)
         self.layer.addSublayer(self.selectionLayer)
 
         self.layer.addSublayer(self.roadToSelectionLayer)
@@ -349,7 +349,7 @@ import CoreGraphics
         
         let largerLineWidth = fmax(selectedOuterCircleLineWidth, lastStateOuterCircleLineWidth)
         
-        if(!animationRendering) {
+     //   if(!animationRendering) {
             
             let clearCentersPath = self._shapePath(self.centerPoints, aRadius: largerRadius + largerLineWidth, aLineHeight: _lineHeight)
             clearCentersLayer.path = clearCentersPath.cgPath
@@ -359,18 +359,10 @@ import CoreGraphics
             backgroundLayer.path = bgPath.cgPath
             backgroundLayer.fillColor = backgroundShapeColor.cgColor
             
-            let progressPath = self._shapePath(self.centerPoints, aRadius: _progressRadius, aLineHeight: _progressLineHeight)
+            //previous selected state with inner circle radius
+            let progressPath = self._shapePath(self.centerPoints, aRadius: _radius, aLineHeight: _progressLineHeight)
             progressLayer.path = progressPath.cgPath
             progressLayer.fillColor = selectedBackgoundColor.cgColor
-            
-            let clearSelectedRadius = fmax(_progressRadius, _progressRadius + selectedOuterCircleLineWidth)
-            let clearSelectedPath = self._shapePathForSelected(self.centerPoints[currentIndex], aRadius: clearSelectedRadius)
-            clearSelectionLayer.path = clearSelectedPath.cgPath
-            clearSelectionLayer.fillColor = viewBackgroundColor.cgColor
-            
-            let selectedPath = self._shapePathForSelected(self.centerPoints[currentIndex], aRadius: _radius)
-            selectionLayer.path = selectedPath.cgPath
-            selectionLayer.fillColor = currentSelectedCenterColor.cgColor
 
             if !useLastState {
                 let selectedPathCenter = self._shapePathForSelectedPathCenter(self.centerPoints[currentIndex], aRadius: _progressRadius)
@@ -412,10 +404,7 @@ import CoreGraphics
                 }
 
             }
-        }
-        self.renderTopTextIndexes()
-        self.renderBottomTextIndexes()
-        self.renderTextIndexes()
+    //    }
         
         let progressCenterPoints = Array<CGPoint>(centerPoints[0..<(completedTillIndex+1)])
         
@@ -440,7 +429,9 @@ import CoreGraphics
                     self.animationRendering = false
                 }
             }
-            
+            DispatchQueue.main.asyncAfter(deadline: .now() + progressAnimation.duration) {
+                self.layer.addSublayer(self.selectionCenterLayer)
+            }
             maskLayer.add(progressAnimation, forKey: "progressAnimation")
             CATransaction.commit()
         }
@@ -744,7 +735,8 @@ import CoreGraphics
         
         maskPath.addLine(to: CGPoint(x: currentProgressCenterPoint.x + xOffset, y: currentProgressCenterPoint.y - self._progressLineHeight))
         
-        maskPath.addArc(withCenter: currentProgressCenterPoint, radius: self._progressRadius, startAngle: -angle, endAngle: angle, clockwise: true)
+        //path till selected inner circle
+        maskPath.addArc(withCenter: currentProgressCenterPoint, radius: self._radius, startAngle: -angle, endAngle: angle, clockwise: true)
 
         
         maskPath.addLine(to: CGPoint(x: currentProgressCenterPoint.x + xOffset, y: self.bounds.height))
@@ -763,6 +755,7 @@ import CoreGraphics
      - parameter gestureRecognizer: The gesture recognizer responsible for the action
      */
     @objc func gestureAction(_ gestureRecognizer: UIGestureRecognizer) {
+        selectionCenterLayer.removeFromSuperlayer()
         if(gestureRecognizer.state == UIGestureRecognizer.State.ended ||
             gestureRecognizer.state == UIGestureRecognizer.State.changed ) {
             
